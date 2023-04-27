@@ -6,8 +6,9 @@ from referee.game import \
 from referee.game.constants import *
 from collections import defaultdict
 
+
 class Cell:
-    def __init__(self, color: PlayerColor|None = None, power: int = 0):
+    def __init__(self, color: PlayerColor | None = None, power: int = 0):
         self.color = color
         self.power = power
 
@@ -51,6 +52,3 @@ class Board:
             self._turn == PlayerColor.BLUE
         else:
             self._turn == PlayerColor.RED
-        
-    
-
