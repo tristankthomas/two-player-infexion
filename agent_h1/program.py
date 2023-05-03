@@ -7,9 +7,15 @@ from referee.game.constants import *
 from .state import Board
 from random import choice
 from itertools import product
+import heapq
+import numpy as np
 
 
-# This is the entry point for your game playing agent.
+# This is the entry point for your game playing agent. Currently the agent
+# simply spawns a token at the centre of the board if playing as RED, and
+# spreads a token at the centre of the board if playing as BLUE. This is
+# intended to serve as an example of how to use the referee API -- obviously
+# this is not a valid strategy for actually playing the game!
 
 class Agent:
     def __init__(self, color: PlayerColor, **referee: dict):
@@ -28,32 +34,22 @@ class Agent:
         """
         Return the next action to take.
         """
-        curr_state = self._board._state
-        turn_num = self._board._turn_num
-        spread_pieces = \
-            [key for key in curr_state if curr_state[key].color == self._color]
-        if turn_num < 2 or spread_pieces == []:
-            move_type = 0
-        elif self._board.totalCombPower() == MAX_TOTAL_POWER:
-            move_type = 1
-        else:
-            move_type = choice([0, 1])
+        curr_state = self._board.state
+        turn_num = self._board.turn_num
 
-        if move_type:
-            # spread
-            spread_loc = choice(spread_pieces)
-            spread_dir = choice([HexDir.Down, HexDir.DownRight, HexDir.DownLeft,
-                                HexDir.Up, HexDir.UpRight, HexDir.UpLeft])
-            return SpreadAction(spread_loc, spread_dir)
-        else:
+        if turn_num < 2:
             # spawn
             r = list(range(7))
             q = list(range(7))
             locs = list(product(r, q))
-            locs = [HexPos(r, q) for (r,q) in locs]
-            locs = list(filter(lambda key: curr_state[key].color == None, locs))
+            locs = [HexPos(r, q) for (r, q) in locs]
+            locs = list(filter(lambda key: curr_state[key].color is None, locs))
             spawn_loc = choice(locs)
             return SpawnAction(spawn_loc)
+        else:
+            # either
+            possible_moves = self._board.getLegalActions()
+            return heapq.heappop(possible_moves)[1]
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
@@ -62,13 +58,10 @@ class Agent:
         match action:
             case SpawnAction(cell):
                 # update Board
-                self._board.updateSpawn(color, cell)
-                print(f"Testing: {color} SPAWN at {cell}")
+                self._board = self._board.updateSpawn(color, cell)
+                # print(f"Testing: {color} SPAWN at {cell}")
                 pass
             case SpreadAction(cell, direction):
-                self._board.updateSpread(color, cell, direction)
-                print(f"Testing: {color} SPREAD from {cell}, {direction}")
+                self._board = self._board.updateSpread(color, cell, direction)
+                # print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
-
-        self._board._turn_num += 1
-        self._board.updatePlayer()

@@ -52,6 +52,7 @@ class Board:
         cell = Cell(color, 1)
         new_state = self.state.copy()
         turn = self.updatePlayer()
+
         turn_num = 1 + self.turn_num
         new_state[pos] = cell
         return Board(new_state, turn, turn_num)
@@ -77,7 +78,9 @@ class Board:
 
     def updatePlayer(self):
         # iterate turns
+
         if self.turn == PlayerColor.RED:
+            print(self.turn)
             return PlayerColor.BLUE
         else:
             return PlayerColor.RED
@@ -108,8 +111,8 @@ class Board:
         match action:
             case SpawnAction(cell):
                 return self.updateSpawn(self.turn, cell)
-            case SpreadAction(cell, dir):
-                return self.updateSpread(self.turn, cell, dir)
+            case SpreadAction(cell, direction):
+                return self.updateSpread(self.turn, cell, direction)
 
     def isGameOver(self):
         # taken from the board.py in referee module
@@ -184,7 +187,7 @@ class MonteCarloTreeSearchNode:
         if self.parent:
             self.parent.backPropagate(result)
 
-    def bestChild(self, c_param=0.1):
+    def bestChild(self, c_param=0.1, c=None):
         # select the best child according to UCB1, only looks at expanded children
         choices_weights = [(c._wins / c._n) + c_param * np.sqrt((2 * np.log(self._n) / c._n)) for c in self.children]
         return self.children[np.argmax(choices_weights)]
