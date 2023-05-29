@@ -140,7 +140,7 @@ class Board:
     ## Heuristic methods
     def _heuristic(self):
         curr_colour = self.turn
-
+        turn_num = self.turn_num
         opp_colour = self.opponentColor()
 
         # if near end game, give more weighting to having more power i.e. give higher weighting to boards with more of our power
@@ -161,13 +161,11 @@ class Board:
             if cell[POS] not in unsafe:
                 safety += cell[CELL].power
 
-        # cells that can eat but not be eaten?
+        safety_weight = 1
 
-        if opp_power == 0:
-            return 10000 + random.uniform(0.0, 0.1)
-        if safety == 0:
+        if safety == 0 and player_num_cells == 0 and turn_num >= 2:
             return -10000 + random.uniform(0.0, 0.1)
-        return diff_power - opp_power + diff_num_cells - opp_num_cells + safety + random.uniform(0.0, 0.1)
+        return 0.5 * diff_power - opp_power + diff_num_cells - opp_num_cells + safety_weight * safety + random.uniform(0.0, 0.1)
 
     def colorNumCells(self, color: PlayerColor):
         # total number of cells for a color
@@ -201,7 +199,7 @@ class Board:
             pos = cell[POS]
             for direction in [HexDir.Down, HexDir.DownRight, HexDir.DownLeft,
                       HexDir.Up, HexDir.UpRight, HexDir.UpLeft]:
-                curr_state = simulateSpread2(curr_state, color, pos, direction)
+                curr_state = simulateSpreadNew(curr_state, color, pos, direction)
         return [x[POS] for x in curr_state.items() if x[CELL].color == color]
 
     def opponentColor(self):
@@ -221,7 +219,7 @@ class Board:
 
         return False
 
-def simulateSpread2(state: dict[HexPos, Cell], color: PlayerColor, pos: HexPos,
+def simulateSpreadNew(state: dict[HexPos, Cell], color: PlayerColor, pos: HexPos,
                    direction: HexDir):
     # simulate spread to determine the locations that it can spread to
     power = state[pos].power
