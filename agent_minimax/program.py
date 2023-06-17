@@ -9,23 +9,19 @@ from random import choice
 from itertools import product
 
 
-# This is the entry point for your game playing agent.
 class Agent:
     def __init__(self, color: PlayerColor, **referee: dict):
         """
-        Initialise the agent.
+        Initialise the agent, with a new Board object.
         """
         self._color = color
         self._board = Board()
-        match color:
-            case PlayerColor.RED:
-                print("Testing: I am playing as red")
-            case PlayerColor.BLUE:
-                print("Testing: I am playing as blue")
 
     def action(self, **referee: dict) -> Action:
         """
-        Return the next action to take.
+        Using the current board and taking into account the remaining resources,
+        run an alpha-beta search to determine the next move to take, and return
+        the action.
         """
         curr_board = self._board
         board_copy = self._board.copy()
@@ -42,15 +38,13 @@ class Agent:
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
         """
-        Update the agent with the last player's action.
+        Update the agent's Board object to be up to date with its own actions as
+        well as the opponent's actions.
         """
         match action:
             case SpawnAction(cell):
-                # update Board
                 self._board.updateSpawn(color, cell)
-                print(f"Testing: {color} SPAWN at {cell}")
                 pass
             case SpreadAction(cell, direction):
                 self._board.updateSpread(color, cell, direction)
-                print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
