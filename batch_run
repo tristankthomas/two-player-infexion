@@ -1,27 +1,87 @@
 #!/bin/bash
+sudo rm -f output.csv
+# Define the number of processes to run concurrently
+num_procs=$(nproc)  # Get the number of CPU cores on the system
 
-rm output.csv
-echo -n "Input number of runs: "
-read num
+echo "Enter number of runs: "
+read num_runs
 
-for ((i=1; i<=num; i++)); do
-    python3 -m referee -v 0 -t 180 -s 250 agent_greedy agent_minimax
-    echo "Iteration number, $i"
+num_loops=$((num_runs / num_procs))
+echo $num_loops
+
+# Define a function to run a Python script in the background
+run_script() {
+    sudo nice -n -20 python3 "$@" &
+}
+count=0
+# greedy vs random
+for ((j=1; j<=$num_loops; j++)); do
+
+    for ((i=1; i<=$num_procs; i++)); do
+        count=$((count+1))
+        if (($count % 2 == 0)); then
+            run_script -m referee -v 0 -t 180 -s 250 agent_random agent_greedy
+        else
+            run_script -m referee -v 0 -t 180 -s 250 agent_greedy agent_random
+        fi
+    done
+
+    wait
+    echo "Iteration number, $j"
 done
 
-mv output.csv ./done/output1.csv
+mv output.csv ./done_final/greedyvsrandom.csv
 
-for ((i=1; i<=num; i++)); do
-    python3 -m referee -v 0 -t 180 -s 250 agent_random agent_minimax
-    echo "Iteration number, $i"
+
+ # alphabeta vs greedy
+ for ((j=1; j<=$num_loops; j++)); do
+     for ((i=1; i<=$num_procs; i++)); do
+         count=$((count+1))
+         if ((count % 2 == 0)); then
+             run_script -m referee -v 0 -t 180 -s 250 agent_minimax agent_greedy
+         else
+             run_script -m referee -v 0 -t 180 -s 250 agent_greedy agent_minimax
+         fi
+     done
+
+     wait
+     echo "Iteration number, $j"
+ done
+
+ mv output.csv ./done_final/alphabetavsgreedy.csv
+
+
+ # alphabeta vs random
+ for ((j=1; j<=$num_loops; j++)); do
+     count=$((count+1))
+     for ((i=1; i<=$num_procs; i++)); do
+         if ((count % 2 == 0)); then
+             run_script -m referee -v 0 -t 180 -s 250 agent_minimax agent_random
+         else
+             run_script -m referee -v 0 -t 180 -s 250 agent_random agent_minimax
+         fi
+     done
+
+     wait
+     echo "Iteration number, $j"
+ done
+
+ mv output.csv ./done_final/alphabetavsrandom.csv
+
+ # alphabeta vs mcts
+for ((j=1; j<=$num_loops; j++)); do
+
+    for ((i=1; i<=$num_procs; i++)); do
+        count=$((count+1))
+        if ((count % 2 == 0)); then
+            run_script -m referee -v 0 -t 180 agent_MCTS_henry agent_alphabeta_optimised
+        else
+            run_script -m referee -v 0 -t 180 agent_alphabeta_optimised agent_MCTS_henry
+        fi
+    done
+
+    wait
+    echo "Iteration number, $j"
 done
 
-mv output.csv ./done/output2.csv
-
-
-for ((i=1; i<=num; i++)); do
-    python3 -m referee -v 0 -t 180 -s 250 agent_alphabeta agent_minimax
-    echo "Iteration number, $i"
-done
-
-mv output.csv ./done/output3.csv
+clear
