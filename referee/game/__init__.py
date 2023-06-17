@@ -11,6 +11,8 @@ from .player import Player
 from .board import Board, PlayerColor
 from .actions import Action, SpawnAction, SpreadAction
 from .exceptions import PlayerException, IllegalActionException
+import csv
+import os
 
 
 # Here we define the ADT for all possible game updates. This is a useful
@@ -94,6 +96,9 @@ async def game(
                     # Get the current player.
                     turn_color: PlayerColor = board._turn_color
                     player: Player = players[board._turn_color]
+
+                    opp_color = PlayerColor.BLUE if turn_color == turn_color.RED else PlayerColor.RED
+                    opp = players[opp_color]
                     
                     # Get the current player's requested action.
                     turn_id = board.turn_count + 1
@@ -108,6 +113,19 @@ async def game(
                     # Check if game is over.
                     if board.game_over:
                         winner_color = board.winner_color
+                        # for testing
+                        if os.path.isfile('output.csv'):
+
+                            with open('output.csv', 'a', newline='') as file:
+                                writer = csv.writer(file)
+                                writer.writerow([player.pkg, opp.pkg, turn_color, turn_id, player.agent.status.time_used, opp.agent.status.time_used])
+                        else:
+                            with open('output.csv', 'w', newline='') as file:
+                                writer = csv.writer(file)
+                                writer.writerow(['winner', 'loser', 'win_colour', 'number_of_moves', 'winner_time_used', 'loser_time_used'])
+                                writer.writerow([player.pkg, opp.pkg, turn_color, turn_id, player.agent.status.time_used, opp.agent.status.time_used])
+
+
                         break
 
                     # Update both players.

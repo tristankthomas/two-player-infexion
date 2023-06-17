@@ -1,0 +1,27 @@
+#!/bin/bash
+
+rm output.csv
+echo -n "Input number of runs: "
+read num
+
+for ((i=1; i<=num; i++)); do
+    python3 -m referee -v 0 -t 180 -s 250 agent_greedy agent_minimax
+    echo "Iteration number, $i"
+done
+
+mv output.csv ./done/output1.csv
+
+for ((i=1; i<=num; i++)); do
+    python3 -m referee -v 0 -t 180 -s 250 agent_random agent_minimax
+    echo "Iteration number, $i"
+done
+
+mv output.csv ./done/output2.csv
+
+
+for ((i=1; i<=num; i++)); do
+    python3 -m referee -v 0 -t 180 -s 250 agent_alphabeta agent_minimax
+    echo "Iteration number, $i"
+done
+
+mv output.csv ./done/output3.csv

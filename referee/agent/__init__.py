@@ -34,11 +34,11 @@ class AgentProxyPlayer(Player):
 
         assert isinstance(agent_loc, tuple), "agent_loc must be a tuple"
         assert len(agent_loc) == 2, "agent_loc must be a tuple (pkg, cls)"
-        self._pkg, self._cls = agent_loc
+        self.pkg, self._cls = agent_loc
         
         self._name = name
-        self._agent: RemoteProcessClassClient = RemoteProcessClassClient(
-            self._pkg, self._cls, 
+        self.agent: RemoteProcessClassClient = RemoteProcessClassClient(
+            self.pkg, self._cls, 
             time_limit=time_limit, space_limit=space_limit, 
             recv_timeout=RECV_TIMEOUT, 
             log=log,
@@ -57,9 +57,9 @@ class AgentProxyPlayer(Player):
         # Reraising exceptions as PlayerExceptions to determine win/loss
         # outcomes in calling code (see the 'game' module).
         except ResourceLimitException as e:
-            self._log.error(f"resource limit exceeded (pid={self._agent.pid}): {str(e)}")
+            self._log.error(f"resource limit exceeded (pid={self.agent.pid}): {str(e)}")
             self._log.error("\n")
-            self._log.error(self._summarise_status(self._agent.status))
+            self._log.error(self._summarise_status(self.agent.status))
             self._log.error("\n")
 
             raise self._InterceptExc(
@@ -70,7 +70,7 @@ class AgentProxyPlayer(Player):
         except WrappedProcessException as e:
             err_lines = str(e.args[1]["stacktrace_str"]).splitlines()
 
-            self._log.error(f"exception caught (pid={self._agent.pid}):")
+            self._log.error(f"exception caught (pid={self.agent.pid}):")
             self._log.error("\n")
             self._log.error("\n".join([f">> {line}" for line in err_lines]))
             self._log.error("\n")
@@ -87,30 +87,30 @@ class AgentProxyPlayer(Player):
         # __aexit__ methods.
         self._log.debug(f"creating agent subprocess...")
         with self._intercept_exc():
-            await self._agent.__aenter__()
+            await self.agent.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_value, traceback):
-        await self._agent.__aexit__(exc_type, exc_value, traceback)
+        await self.agent.__aexit__(exc_type, exc_value, traceback)
         self._log.debug(f"agent process terminated")
 
     async def action(self) -> Action:
         self._log.debug(f"call 'action()'...")
 
         with self._intercept_exc():
-            action: Action = await self._agent.action()
+            action: Action = await self.agent.action()
 
         self._log.debug(f"{self._ret_symbol} {action!r}")
-        self._log.debug(self._summarise_status(self._agent.status))
+        self._log.debug(self._summarise_status(self.agent.status))
         return action
 
     async def turn(self, color: PlayerColor, action: Action):
         self._log.debug(f"call 'turn({color!r}, {action!r})'...")
 
         with self._intercept_exc():
-            await self._agent.turn(color, action)
+            await self.agent.turn(color, action)
 
-        self._log.debug(self._summarise_status(self._agent.status))
+        self._log.debug(self._summarise_status(self.agent.status))
 
     def _summarise_status(self, status: AsyncProcessStatus | None):
         if status is None:

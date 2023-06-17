@@ -29,7 +29,7 @@ class RemoteProcessClassClient:
         log: LogStream=NullLogger(),
         **cons_kwargs
     ):
-        self._pkg = pkg
+        self.pkg = pkg
         self._cls = cls
         self._time_limit = time_limit
         self._space_limit = space_limit
@@ -120,7 +120,7 @@ class RemoteProcessClassClient:
         self._proc = await create_subprocess_exec(
             sys.executable, "-m", _SUBPROC_MODULE,
             m_pickle((
-                self._pkg, self._cls,
+                self.pkg, self._cls,
                 self._time_limit, self._space_limit,
                 self._cons_args, 
                 self._cons_kwargs
@@ -135,7 +135,7 @@ class RemoteProcessClassClient:
         # Expect ack that constructor was called
         try:
             self._log.debug(
-                f"initialising class '{self._pkg}:{self._cls}' "
+                f"initialising class '{self.pkg}:{self._cls}' "
                 f"on subprocess {self._proc.pid}"
             )
             assert await self._recv_reply() == _ACK
