@@ -6,12 +6,9 @@ from referee.game import \
 from referee.game.constants import *
 from collections import defaultdict
 from itertools import product
-import time
-import heapq
-import random
 
 TIME_LIMIT = 1
-DEPTH_LIMIT = 2
+DEPTH_LIMIT = 3
 INFINITY = float('inf')
 
 POS = 0
@@ -40,7 +37,12 @@ class Board:
         self.turn_num = turn_num
 
     def __repr__(self):
-        return f"{self.state, self.turn_num}"
+        return f"{self.state, self.turn_num, self.turn}"
+
+    def copy(self):
+        turn = self.turn
+        turn_num = self.turn_num
+        return Board(self.state.copy(), turn, turn_num)
 
     def totalCombPower(self):
         # Calculate the total power of board
@@ -87,59 +89,55 @@ class Board:
     def updateSpawn(self, color: PlayerColor, pos: HexPos):
         # update board for a spawn move
         cell = Cell(color, 1)
-        new_state = self.state.copy()
-        turn = self.updatePlayer()
-        turn_num = 1 + self.turn_num
-        new_state[pos] = cell
-        return Board(new_state, turn, turn_num)
+        self.updatePlayer()
+        self.turn_num = 1 + self.turn_num
+        self.state[pos] = cell
 
     def updateSpread(self, color: PlayerColor, pos: HexPos, direction: HexDir):
         # update board for spread move
         power = self.state[pos].power
-        new_state = self.state.copy()
-        new_state[pos] = Cell(None, 0)
+        self.state[pos] = Cell(None, 0)
 
         curr_pos = pos
         for _ in range(power):
             curr_pos += direction
-            if new_state[curr_pos].power == MAX_CELL_POWER:
-                new_state[curr_pos] = Cell(None, 0)
+            if self.state[curr_pos].power == MAX_CELL_POWER:
+                self.state[curr_pos] = Cell(None, 0)
                 continue
             else:
-                new_state[curr_pos] = Cell(
-                    color, new_state[curr_pos].power + 1)
-        turn = self.updatePlayer()
-        turn_num = 1 + self.turn_num
-        return Board(new_state, turn, turn_num)
+                self.state[curr_pos] = Cell(
+                    color, self.state[curr_pos].power + 1)
+        self.updatePlayer()
+        self.turn_num = 1 + self.turn_num
 
-    def isPieceTaken(self, color: PlayerColor, pos: HexPos, direction: HexDir):
-        # update board for spread move
-        power = self.state[pos].power
-        new_state = self.state.copy()
-        new_state[pos] = Cell(None, 0)
-        takes_piece = False
+    # def isPieceTaken(self, color: PlayerColor, pos: HexPos, direction: HexDir):
+    #     # update board for spread move
+    #     power = self.state[pos].power
+    #     new_state = self.state.copy()
+    #     new_state[pos] = Cell(None, 0)
+    #     takes_piece = False
 
-        curr_pos = pos
-        for _ in range(power):
-            curr_pos += direction
-            if new_state[curr_pos].power == MAX_CELL_POWER:
-                new_state[curr_pos] = Cell(None, 0)
-                continue
-            else:
-                if new_state[curr_pos].color == self.turn:
-                    takes_piece = True
+    #     curr_pos = pos
+    #     for _ in range(power):
+    #         curr_pos += direction
+    #         if new_state[curr_pos].power == MAX_CELL_POWER:
+    #             new_state[curr_pos] = Cell(None, 0)
+    #             continue
+    #         else:
+    #             if new_state[curr_pos].color == self.turn:
+    #                 takes_piece = True
 
-                new_state[curr_pos] = Cell(
-                    color, new_state[curr_pos].power + 1)
+    #             new_state[curr_pos] = Cell(
+    #                 color, new_state[curr_pos].power + 1)
 
-        return takes_piece
+    #     return takes_piece
 
     def updatePlayer(self):
         # iterate turns
         if self.turn == PlayerColor.RED:
-            return PlayerColor.BLUE
+            self.turn = PlayerColor.BLUE
         else:
-            return PlayerColor.RED
+            self.turn = PlayerColor.RED
 
     def getLegalActions(self):
         # return a list of the valid moves from this board state for this player
@@ -167,9 +165,9 @@ class Board:
     def move(self, action: Action):
         match action:
             case SpawnAction(cell):
-                return self.updateSpawn(self.turn, cell)
+                self.updateSpawn(self.turn, cell)
             case SpreadAction(cell, dir):
-                return self.updateSpread(self.turn, cell, dir)
+                self.updateSpread(self.turn, cell, dir)
 
     def isGameOver(self):
         # taken from the board.py in referee module
@@ -198,38 +196,6 @@ class Board:
 
         return (PlayerColor.RED, PlayerColor.BLUE)[red_power < blue_power]
 
-    def eval(self):
-        opp_color = self.turn  # because now the board will say it's the opponent's turn after we just made a move
-        color = opponentColor(opp_color)
-        turn_num = self.turn_num
-
-        # if near end game, give more weighting to having more power i.e. give higher weighting to boards with more of our power
-        player_power = self.colorPower(color)
-        opp_power = self.colorPower(opp_color)
-        if opp_power == 0:
-            return 10000
-        diff_power = player_power - opp_power
-
-        player_num_cells = self.colorNumCells(color)
-        opp_num_cells = self.colorNumCells(opp_color)
-        diff_num_cells = player_num_cells - opp_num_cells
-
-        player_cells = self.colorCells(color)
-
-        # safety - number of pieces and power of safe cells
-        safety = 0
-        unsafe = self.unsafePositions(opp_color)
-        for cell in player_cells:
-            if cell[POS] not in unsafe:
-                safety += cell[CELL].power
-
-        # possible_spread = len(self.board.unsafePositions(color))
-        # cells that can eat but not be eaten?
-
-        if safety == 0:
-            return -10000
-        return 0.5 * diff_power - opp_power + diff_num_cells - opp_num_cells + safety
-
 
 class Node:
     def __init__(self, board, parent=None, parent_action=None):
@@ -246,7 +212,12 @@ class Node:
         self.parent_action = move
 
     def copy(self):
-        return Node(self.board, self.parent, self.parent_action)
+        board = self.board.copy()
+        if self.parent is None:
+            parent = None
+        else:
+            parent = self.parent.copy()
+        return Node(board, parent, self.parent_action)
 
     def getChildren(self):
         children = []
@@ -270,7 +241,7 @@ class Node:
         # if near end game, give more weighting to having more power i.e. give higher weighting to boards with more of our power
         player_power = self.board.colorPower(color)
         opp_power = self.board.colorPower(opp_color)
-        if opp_power == 0 and turn_num < 2:
+        if opp_power == 0 and turn_num >= 2:
             return 10000
         diff_power = player_power - opp_power
 
@@ -287,11 +258,17 @@ class Node:
             if cell[POS] not in unsafe:
                 safety += cell[CELL].power
 
-        safety_weight = 1
+        # possible_spread = len(self.board.unsafePositions(color))
+        # cells that can eat but not be eaten?
+
+        if diff_num_cells > 0:
+            safety_weight = 1 - diff_num_cells / player_num_cells
+        else:
+            safety_weight = 1.5
 
         if safety == 0 and player_num_cells == 0 and turn_num >= 2:
-            return -10000 + random.uniform(0.0, 0.1)
-        return 0.5 * diff_power - opp_power + diff_num_cells - opp_num_cells + safety_weight * safety + random.uniform(0.0, 0.1)
+            return -10000
+        return 0.5 * diff_power - opp_power + diff_num_cells - opp_num_cells + safety_weight * safety
 
 
 def opponentColor(color: PlayerColor):
@@ -302,7 +279,6 @@ def simulateSpread(state: dict[HexPos, Cell], color: PlayerColor, pos: HexPos,
                    direction: HexDir):
     # simulate spread to determine the locations that it can spread to
     power = state[pos].power
-    # new_state[pos] = Cell(None, 0)
 
     curr_pos = pos
     for _ in range(power):
@@ -311,44 +287,59 @@ def simulateSpread(state: dict[HexPos, Cell], color: PlayerColor, pos: HexPos,
             color, state[curr_pos].power)
 
 
-def alpha_beta_search(node, depth=0):
+def alpha_beta_search(node, depth):
     best_val = -INFINITY
     beta = INFINITY
 
-    children = node.getChildren()
+    start_node = node.copy()
+    moves = node.board.getLegalActions()
     best_node = None
-    for child in children:
-        value = min_value(child, best_val, beta, depth + 1)
-        if value > best_val:
+    best_move = None
+    for move in moves:
+        node.board.move(move)
+        value = min_value(node, best_val, beta, depth - 1)
+        if value == 10000:
+            return move
+        elif value > best_val:
             best_val = value
-            best_node = child
+            best_node = node.copy()
+            best_move = move
+        node = start_node.copy()
     print("AlphaBeta:  Utility Value of Root Node: = " + str(best_val))
-    return best_node.parent_action
+    return best_move
 
 
-def max_value(node, alpha, beta, depth=0):
-    if node.board.isGameOver() or depth >= DEPTH_LIMIT:
+def max_value(node, alpha, beta, depth):
+    if node.board.isGameOver() or depth <= 0:
         return node.eval(True)
     value = -INFINITY
 
-    children = node.getChildren()
-    for child in children:
-        value = max(value, min_value(child, alpha, beta, depth + 1))
+    start_node = node.copy()
+    moves = node.board.getLegalActions()
+    for move in moves:
+        node.board.move(move)
+        value = max(value, min_value(node, alpha, beta, depth - 1))
         if value >= beta:
+            node = start_node.copy()
             return value
         alpha = max(alpha, value)
+        node = start_node.copy()
     return value
 
 
-def min_value(node, alpha, beta, depth=0):
-    if node.board.isGameOver() or depth >= DEPTH_LIMIT:
+def min_value(node, alpha, beta, depth):
+    if node.board.isGameOver() or depth <= 0:
         return node.eval(False)
     value = INFINITY
 
-    children = node.getChildren()
-    for child in children:
-        value = min(value, max_value(child, alpha, beta, depth + 1))
+    start_node = node.copy()
+    moves = node.board.getLegalActions()
+    for move in moves:
+        node.board.move(move)
+        value = min(value, max_value(node, alpha, beta, depth - 1))
         if value <= alpha:
+            node = start_node.copy()
             return value
         beta = min(beta, value)
+        node = start_node.copy()
     return value

@@ -33,8 +33,12 @@ class Agent:
         Return the next action to take.
         """
         curr_board = self._board
+        board_copy = self._board.copy()
         node = Node(curr_board, None, None)
-        return alpha_beta_search(node)
+        depth = 3
+        move = alpha_beta_search(node, depth)
+        self._board = board_copy
+        return move
 
 
     def turn(self, color: PlayerColor, action: Action, **referee: dict):
@@ -44,10 +48,10 @@ class Agent:
         match action:
             case SpawnAction(cell):
                 # update Board
-                self._board = self._board.updateSpawn(color, cell)
+                self._board.updateSpawn(color, cell)
                 print(f"Testing: {color} SPAWN at {cell}")
                 pass
             case SpreadAction(cell, direction):
-                self._board = self._board.updateSpread(color, cell, direction)
+                self._board.updateSpread(color, cell, direction)
                 print(f"Testing: {color} SPREAD from {cell}, {direction}")
                 pass
