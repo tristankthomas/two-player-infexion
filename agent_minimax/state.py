@@ -7,8 +7,6 @@ from referee.game.constants import *
 from collections import defaultdict
 from itertools import product
 
-TIME_LIMIT = 1
-DEPTH_LIMIT = 3
 INFINITY = float('inf')
 
 POS = 0
@@ -110,27 +108,6 @@ class Board:
         self.updatePlayer()
         self.turn_num = 1 + self.turn_num
 
-    # def isPieceTaken(self, color: PlayerColor, pos: HexPos, direction: HexDir):
-    #     # update board for spread move
-    #     power = self.state[pos].power
-    #     new_state = self.state.copy()
-    #     new_state[pos] = Cell(None, 0)
-    #     takes_piece = False
-
-    #     curr_pos = pos
-    #     for _ in range(power):
-    #         curr_pos += direction
-    #         if new_state[curr_pos].power == MAX_CELL_POWER:
-    #             new_state[curr_pos] = Cell(None, 0)
-    #             continue
-    #         else:
-    #             if new_state[curr_pos].color == self.turn:
-    #                 takes_piece = True
-
-    #             new_state[curr_pos] = Cell(
-    #                 color, new_state[curr_pos].power + 1)
-
-    #     return takes_piece
 
     def updatePlayer(self):
         # iterate turns
@@ -257,9 +234,6 @@ class Node:
         for cell in player_cells:
             if cell[POS] not in unsafe:
                 safety += cell[CELL].power
-
-        # possible_spread = len(self.board.unsafePositions(color))
-        # cells that can eat but not be eaten?
 
         if diff_num_cells > 0:
             safety_weight = 1 - diff_num_cells / player_num_cells

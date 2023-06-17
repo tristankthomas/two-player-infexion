@@ -9,12 +9,7 @@ from random import choice
 from itertools import product
 
 
-# This is the entry point for your game playing agent. Currently the agent
-# simply spawns a token at the centre of the board if playing as RED, and
-# spreads a token at the centre of the board if playing as BLUE. This is
-# intended to serve as an example of how to use the referee API -- obviously
-# this is not a valid strategy for actually playing the game!
-
+# This is the entry point for your game playing agent.
 class Agent:
     def __init__(self, color: PlayerColor, **referee: dict):
         """
@@ -36,6 +31,10 @@ class Agent:
         board_copy = self._board.copy()
         node = Node(curr_board, None, None)
         depth = 3
+        if referee["time_remaining"] < 80:
+            depth = 2
+        elif referee["time_remaining"] < 20:
+            depth = 1
         move = alpha_beta_search(node, depth)
         self._board = board_copy
         return move

@@ -161,7 +161,10 @@ class Board:
             if cell[POS] not in unsafe:
                 safety += cell[CELL].power
 
-        safety_weight = 1
+        if diff_num_cells > 0:
+            safety_weight = 1 - diff_num_cells / player_num_cells
+        else:
+            safety_weight = 1
 
         if safety == 0 and player_num_cells == 0 and turn_num >= 2:
             return -10000 + random.uniform(0.0, 0.1)
