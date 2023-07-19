@@ -1,7 +1,9 @@
 #!/bin/bash
+
 sudo rm -f output.csv
-# Define the number of processes to run concurrently
-num_procs=$(nproc)  # Get the number of CPU cores on the system
+
+# Get the number of CPU cores on the system
+num_procs=$(nproc)
 
 echo "Enter number of runs: "
 read num_runs

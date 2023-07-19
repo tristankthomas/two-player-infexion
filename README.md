@@ -14,11 +14,11 @@ The game ends when one player takes control of all opponents tokens on the board
 ## Usage
 To play a game involving two agents the following line is called:
 ```
-python -m module <red agent> <blue agent>
+python -m referee <red agent> <blue agent>
 ```
 where `red agent` and `blue agent` are the names of the modules containing the agents that are to compete against each other. For example to play greedy against random requires:
 ```
-python -m module agent_greedy agent_random
+python -m referee agent_greedy agent_random
 ```
 To see all the arguments associated with the referee, the `--help` flag can be used.
 
